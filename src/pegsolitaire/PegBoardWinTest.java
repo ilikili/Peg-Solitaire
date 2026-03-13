@@ -1,6 +1,7 @@
 package pegsolitaire;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.Test;
 
 public class PegBoardWinTest {
@@ -13,12 +14,12 @@ public class PegBoardWinTest {
         // Clear all pegs
         for (int r = 0; r < 7; r++) {
             for (int c = 0; c < 7; c++) {
-                board.pegs[r][c] = false;
+                board.getPegs()[r][c] = false;
             }
         }
 
         // Leave one peg NOT in the center
-        board.pegs[0][3] = true;
+        board.getPegs()[0][3] = true;
 
         assertEquals(PegBoard.WinState.WIN, board.getWinState());
     }
@@ -31,13 +32,13 @@ public class PegBoardWinTest {
         // Clear all pegs
         for (int r = 0; r < 7; r++) {
             for (int c = 0; c < 7; c++) {
-                board.pegs[r][c] = false;
+                board.getPegs()[r][c] = false;
             }
         }
 
         // Leave one peg in the center
         int mid = 7 / 2;
-        board.pegs[mid][mid] = true;
+        board.getPegs()[mid][mid] = true;
 
         assertEquals(PegBoard.WinState.PERFECT_WIN, board.getWinState());
     }
@@ -48,8 +49,8 @@ public class PegBoardWinTest {
         board.setShape(PegBoard.Shape.ENGLISH);
 
         // Ensure at least 2 pegs exist
-        board.pegs[3][3] = true;
-        board.pegs[3][4] = true;
+        board.getPegs()[3][3] = true;
+        board.getPegs()[3][4] = true;
 
         assertEquals(PegBoard.WinState.NONE, board.getWinState());
     }

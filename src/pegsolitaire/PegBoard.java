@@ -21,6 +21,12 @@ public class PegBoard extends JPanel implements MouseListener {
     
     public enum Shape { ENGLISH, EUROPEAN, DIAMOND }
     public Shape shape = Shape.ENGLISH;
+    
+    public enum WinState {
+        NONE,
+        WIN,
+        PERFECT_WIN
+    }
 
     public void setShape(Shape s) {
         this.shape = s;
@@ -240,6 +246,36 @@ public class PegBoard extends JPanel implements MouseListener {
         if (pegs[mid][mid]) {
             JOptionPane.showMessageDialog(this, "Perfect win! You finished in the center!");
         }
+    }
+    
+    public WinState getWinState() {
+        int count = 0;
+        int lastR = -1, lastC = -1;
+
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                if (pegs[r][c]) {
+                    count++;
+                    lastR = r;
+                    lastC = c;
+
+                    if (count > 1) return WinState.NONE;
+                }
+            }
+        }
+
+        if (count == 1) {
+            int mid = size / 2;
+            if (lastR == mid && lastC == mid) {
+                return WinState.PERFECT_WIN;
+            }
+            return WinState.WIN;
+        }
+        return WinState.NONE;
+    }
+
+    public boolean[][] getPegs() {
+        return pegs;
     }
 
     // Unused but required
