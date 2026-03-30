@@ -79,7 +79,22 @@ public class PegBoard extends JPanel implements MouseListener {
                 // Draw peg if present
                 if (pegs[r][c]) {
                     g2.setColor(Color.YELLOW);
-                    g2.fillOval(x + 10, y + 10, cellSize - 20, cellSize - 20);
+                    //x g2.fillOval(x + 10, y + 10, cellSize - 20, cellSize - 20);
+	                 // Draw peg as a yellow cross
+	                    g2.setColor(Color.YELLOW);
+	
+	                    int arm = cellSize / 3;      // thickness of the bars
+	                    int pad = cellSize / 4;      // how far to stay away from edges
+
+	                    int cx = x + cellSize / 2;
+	                    int cy = y + cellSize / 2;
+
+	                    // Horizontal bar (shorter)
+	                    g2.fillRect(x + pad, cy - arm / 2, cellSize - 2 * pad, arm);
+
+	                    // Vertical bar (shorter)
+	                    g2.fillRect(cx - arm / 2, y + pad, arm, cellSize - 2 * pad);
+
                 }
 
                 // Highlight selected peg
@@ -90,29 +105,32 @@ public class PegBoard extends JPanel implements MouseListener {
             }
         }
     }
+    
+    public int getBoardSize() {
+        return size;
+    }
 
     @Override
-    public void mouseClicked(MouseEvent e) {
+    public void mousePressed(MouseEvent e) {
         int c = e.getX() / cellSize;
         int r = e.getY() / cellSize;
 
         if (r < 0 || c < 0 || r >= size || c >= size) return;
-        if (!isValidCell(r, c)) return; // ignore clicks in invalid cells
+        if (!isValidCell(r, c)) return;
 
-        // If clicking a peg → select it
         if (pegs[r][c]) {
             selected = new Point(r, c);
             repaint();
             return;
         }
 
-        // If clicking an empty square → try to move
         if (selected != null && !pegs[r][c]) {
             attemptMove(selected.x, selected.y, r, c);
+            repaint();
         }
     }
 
-    private void attemptMove(int sr, int sc, int tr, int tc) {
+    public void attemptMove(int sr, int sc, int tr, int tc) {
 
         // All involved cells must be valid English cells
         if (!isValidCell(sr, sc) || !isValidCell(tr, tc)) {
@@ -163,10 +181,6 @@ public class PegBoard extends JPanel implements MouseListener {
         selected = null;
         checkWin();
         repaint();
-    }
-
-    public int getCellSize() {
-        return cellSize;
     }
 
     private boolean isEnglishCell(int r, int c, int size) {
@@ -279,8 +293,44 @@ public class PegBoard extends JPanel implements MouseListener {
     }
 
     // Unused but required
-    public void mousePressed(MouseEvent e) {}
+    public void mouseClicked(MouseEvent e) {}
     public void mouseReleased(MouseEvent e) {}
     public void mouseEntered(MouseEvent e) {}
     public void mouseExited(MouseEvent e) {}
+    
+    public int getCellSize() { return cellSize; }
+    public boolean isInside(int r, int c) { return r >= 0 && c >= 0 && r < size && c < size; }
+    public boolean hasPeg(int r, int c) { return pegs[r][c]; }
+
+    public boolean hasSelection() { return selected != null; }
+    public int getSelectedRow() { return selected.x; }
+    public int getSelectedCol() { return selected.y; }
+
+    public void setSelected(int r, int c) {
+        selected = new Point(r, c);
+    }
+    
+    public void setPeg(int r, int c, boolean value) {
+        pegs[r][c] = value;
+    }
+
+    public void clearSelection() {
+        selected = null;
+    }
+    
+    public int countPegs() {
+        int count = 0;
+        for (int r = 0; r < size; r++)
+            for (int c = 0; c < size; c++)
+                if (pegs[r][c]) count++;
+        return count;
+    }
+
+    public void clearBoard() {
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                pegs[r][c] = false;
+            }
+        }
+    }
 }

@@ -21,9 +21,15 @@ public class PegSolitaire {
     public static PegBoard board;
     public static int boardSize = 7; // default
     public static JPanel background;
+    
+    public static Play mode;
+    public static AutomaticPlay auto;
+    public static ManualPlay manual;
+    
+    public static JCheckBox autoBox;
 
     public static void main(String[] args) {
-
+    	
         // Create frame
         JFrame frame = new JFrame("Peg Solitaire");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -40,6 +46,12 @@ public class PegSolitaire {
         board.setOpaque(false);
         board.setBounds(600, 200, 700, 700);
         background.add(board);
+        manual = new ManualPlay(board);
+        auto = new AutomaticPlay(board);
+
+        // Start in manual mode
+        mode = manual;
+        mode.activate();
 
         // Title label
         JLabel titleLabel = new JLabel("Arc Solitaire");
@@ -74,8 +86,58 @@ public class PegSolitaire {
         BoardOptionsPanel options = new BoardOptionsPanel();
         options.setBounds(40, 200, 300, 200);
         background.add(options);
+        
+	     // Auto-play checkbox
+        JCheckBox autoBox = new JCheckBox("Auto Play");
+        autoBox.setBounds(60, 280, 150, 30);   // adjust position as needed
+        autoBox.setOpaque(false);
+        autoBox.setForeground(Color.WHITE);
+        background.add(autoBox);
+        
+        autoBox.addActionListener(e -> {
+            // Stop current mode
+            mode.deactivate();
 
-        // OK button logic (board rebuild)
+            if (autoBox.isSelected()) {
+                // Switch to automatic
+                mode = auto;
+                mode.activate();
+            } else {
+                // Switch back to manual
+                mode = manual;
+                mode.activate();
+            }
+        });
+        
+        // Randomize button
+        JButton randomizeButton = new JButton("Randomize Board");
+        randomizeButton.setBounds(60, 320, 150, 30);
+        background.add(randomizeButton);
+
+        randomizeButton.addActionListener(e -> {
+
+            // Randomize pegs: 50% chance each cell
+            for (int r = 0; r < board.getBoardSize(); r++) {
+                for (int c = 0; c < board.getBoardSize(); c++) {
+
+                    if (!board.isValidCell(r, c)) {
+                        board.setPeg(r, c, false);
+                        continue;
+                    }
+
+                    boolean peg = Math.random() < 0.5;
+                    board.setPeg(r, c, peg);
+                }
+            }
+
+            board.clearSelection();
+            board.repaint();
+
+            // If auto was running, keep it running
+            PegSolitaire.restartMode();
+        });
+
+     // OK button logic
         options.okButton.addActionListener(e -> {
             try {
                 int newSize = Integer.parseInt(options.sizeField.getText().trim());
@@ -93,7 +155,7 @@ public class PegSolitaire {
                     board.setShape(PegBoard.Shape.DIAMOND);
                 }
 
-                // ⭐ Re-center board
+                // Re-center board
                 int cell = board.getCellSize();
                 int grid = newSize * cell;
                 int x = (background.getWidth() - grid) / 2;
@@ -103,12 +165,14 @@ public class PegSolitaire {
                 background.revalidate();
                 background.repaint();
 
+                PegSolitaire.restartMode();
             } catch (NumberFormatException ex) {
                 System.out.println("Invalid size input");
             }
         });
 
-        // Checkbox
+
+        // Record Checkbox
         JCheckBox checkBox = new JCheckBox("Record");
         checkBox.setFont(new Font("Verdana", Font.BOLD, 16));
         checkBox.setBounds(40, 420, 200, 40);
@@ -116,6 +180,20 @@ public class PegSolitaire {
         background.add(checkBox);
 
         frame.setVisible(true);
+    }
+    
+    public static void restartMode() {
+        if (mode != null) {
+            mode.deactivate();
+        }
+
+        if (autoBox.isSelected()) {
+            mode = auto = new AutomaticPlay(board);
+        } else {
+            mode = manual = new ManualPlay(board);
+        }
+
+        mode.activate();
     }
 }
 

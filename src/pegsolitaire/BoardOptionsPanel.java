@@ -24,7 +24,7 @@ public class BoardOptionsPanel extends JPanel {
 
         // --- Board shape radios (future feature) ---
         english  = new JRadioButton("English");
-        european = new JRadioButton("European");
+        european = new JRadioButton("Hexagon");
         diamond  = new JRadioButton("Diamond");
 
         ButtonGroup shapeGroup = new ButtonGroup();
