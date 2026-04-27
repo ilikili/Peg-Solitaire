@@ -37,7 +37,7 @@ public class PegBoard extends JPanel implements MouseListener {
         this.size = Math.min(size, 13);
         this.size = Math.max(this.size, 5);
         this.setPreferredSize(new Dimension(this.size * cellSize, this.size * cellSize));
-        this.addMouseListener(this);
+        //x this.addMouseListener(this);
         resetBoard();
     }
 
@@ -55,6 +55,7 @@ public class PegBoard extends JPanel implements MouseListener {
         pegs[mid][mid] = false;
 
         selected = null;
+
         repaint();
     }
 
@@ -110,29 +111,8 @@ public class PegBoard extends JPanel implements MouseListener {
         return size;
     }
 
-    @Override
-    public void mousePressed(MouseEvent e) {
-        int c = e.getX() / cellSize;
-        int r = e.getY() / cellSize;
-
-        if (r < 0 || c < 0 || r >= size || c >= size) return;
-        if (!isValidCell(r, c)) return;
-
-        if (pegs[r][c]) {
-            selected = new Point(r, c);
-            repaint();
-            return;
-        }
-
-        if (selected != null && !pegs[r][c]) {
-            attemptMove(selected.x, selected.y, r, c);
-            repaint();
-        }
-    }
-
     public void attemptMove(int sr, int sc, int tr, int tc) {
-
-        // All involved cells must be valid English cells
+        // All involved cells must be valid cells
         if (!isValidCell(sr, sc) || !isValidCell(tr, tc)) {
             selected = null;
             repaint();
@@ -159,7 +139,6 @@ public class PegBoard extends JPanel implements MouseListener {
                 pegs[tr][tc] = true;
             }
         }
-
         // Horizontal move
         if (Math.abs(dc) == 2 && dr == 0) {
             int midR = sr;
@@ -253,6 +232,7 @@ public class PegBoard extends JPanel implements MouseListener {
         }
     }
     
+    /*
     private void checkPerfectWin() {
         int mid = size / 2;
 
@@ -260,7 +240,7 @@ public class PegBoard extends JPanel implements MouseListener {
         if (pegs[mid][mid]) {
             JOptionPane.showMessageDialog(this, "Perfect win! You finished in the center!");
         }
-    }
+    }*/
     
     public WinState getWinState() {
         int count = 0;
@@ -287,17 +267,17 @@ public class PegBoard extends JPanel implements MouseListener {
         }
         return WinState.NONE;
     }
-
+    
     public boolean[][] getPegs() {
         return pegs;
     }
-
+    
     // Unused but required
     public void mouseClicked(MouseEvent e) {}
     public void mouseReleased(MouseEvent e) {}
     public void mouseEntered(MouseEvent e) {}
     public void mouseExited(MouseEvent e) {}
-    
+
     public int getCellSize() { return cellSize; }
     public boolean isInside(int r, int c) { return r >= 0 && c >= 0 && r < size && c < size; }
     public boolean hasPeg(int r, int c) { return pegs[r][c]; }
@@ -305,7 +285,7 @@ public class PegBoard extends JPanel implements MouseListener {
     public boolean hasSelection() { return selected != null; }
     public int getSelectedRow() { return selected.x; }
     public int getSelectedCol() { return selected.y; }
-
+    
     public void setSelected(int r, int c) {
         selected = new Point(r, c);
     }
@@ -313,7 +293,7 @@ public class PegBoard extends JPanel implements MouseListener {
     public void setPeg(int r, int c, boolean value) {
         pegs[r][c] = value;
     }
-
+    
     public void clearSelection() {
         selected = null;
     }
@@ -325,12 +305,49 @@ public class PegBoard extends JPanel implements MouseListener {
                 if (pegs[r][c]) count++;
         return count;
     }
-
+    
     public void clearBoard() {
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 pegs[r][c] = false;
             }
         }
+    }
+    
+    public java.util.List<Point> getAllValidCells() {
+        java.util.List<Point> list = new java.util.ArrayList<>();
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                if (isValidCell(r, c)) {
+                    list.add(new Point(r, c));
+                }
+            }
+        }
+        return list;
+    }
+    
+    public boolean hasAdjacentValidCell(int r, int c) {
+        int[][] dirs = {{1,0},{-1,0},{0,1},{0,-1}};
+        for (int[] d : dirs) {
+            int nr = r + d[0];
+            int nc = c + d[1];
+            if (isValidCell(nr, nc)) return true;
+        }
+        return false;
+    }
+    
+    public boolean[][] copyState() {
+        boolean[][] copy = new boolean[size][size];
+        for (int r = 0; r < size; r++)
+            for (int c = 0; c < size; c++)
+                copy[r][c] = pegs[r][c];
+        return copy;
+    }
+    
+    public void loadState(boolean[][] state) {
+        for (int r = 0; r < size; r++)
+            for (int c = 0; c < size; c++)
+                pegs[r][c] = state[r][c];
+        repaint();
     }
 }

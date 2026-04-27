@@ -42,10 +42,9 @@ public class AutomaticPlay extends Play {
      * Returns true if a move was made, false if no moves exist.
      */
     private boolean performOneMove() {
-    	System.out.println("Checking moves...");
+        System.out.println("Checking moves...");
 
-    	int size = board.getBoardSize();
-        int cell = board.getCellSize();
+        int size = board.getBoardSize();
 
         // Loop through all cells
         for (int r = 0; r < size; r++) {
@@ -55,9 +54,16 @@ public class AutomaticPlay extends Play {
                 if (!board.hasPeg(r, c)) continue;
 
                 // Try all 4 directions
-                // Up: (r-2, c)
                 if (isLegal(r, c, r - 2, c)) {
                     board.attemptMove(r, c, r - 2, c);
+
+                    // RECORD MOVE HERE
+                    int overR = (r + (r - 2)) / 2;
+                    int overC = c;
+                    PegSolitaire.history.add(
+                        new MoveRecord(r, c, overR, overC, r - 2, c, System.currentTimeMillis())
+                    );
+
                     System.out.println("Trying move from " + r + "," + c);
                     return true;
                 }
@@ -65,6 +71,14 @@ public class AutomaticPlay extends Play {
                 // Down: (r+2, c)
                 if (isLegal(r, c, r + 2, c)) {
                     board.attemptMove(r, c, r + 2, c);
+
+                    // RECORD MOVE HERE
+                    int overR = (r + (r + 2)) / 2;
+                    int overC = c;
+                    PegSolitaire.history.add(
+                        new MoveRecord(r, c, overR, overC, r + 2, c, System.currentTimeMillis())
+                    );
+
                     System.out.println("Trying move from " + r + "," + c);
                     return true;
                 }
@@ -72,6 +86,14 @@ public class AutomaticPlay extends Play {
                 // Left: (r, c-2)
                 if (isLegal(r, c, r, c - 2)) {
                     board.attemptMove(r, c, r, c - 2);
+
+                    // RECORD MOVE HERE
+                    int overR = r;
+                    int overC = (c + (c - 2)) / 2;
+                    PegSolitaire.history.add(
+                        new MoveRecord(r, c, overR, overC, r, c - 2, System.currentTimeMillis())
+                    );
+
                     System.out.println("Trying move from " + r + "," + c);
                     return true;
                 }
@@ -79,6 +101,14 @@ public class AutomaticPlay extends Play {
                 // Right: (r, c+2)
                 if (isLegal(r, c, r, c + 2)) {
                     board.attemptMove(r, c, r, c + 2);
+
+                    // RECORD MOVE HERE
+                    int overR = r;
+                    int overC = (c + (c + 2)) / 2;
+                    PegSolitaire.history.add(
+                        new MoveRecord(r, c, overR, overC, r, c + 2, System.currentTimeMillis())
+                    );
+
                     System.out.println("Trying move from " + r + "," + c);
                     return true;
                 }
@@ -117,7 +147,7 @@ public class AutomaticPlay extends Play {
 
         return board.hasPeg(mr, mc);
     }
-    
+
     public boolean isRunning() {
         return running;
     }

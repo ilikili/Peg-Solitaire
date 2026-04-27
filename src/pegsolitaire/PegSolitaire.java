@@ -5,7 +5,11 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
+import java.awt.Point;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -13,8 +17,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-
-import pegsolitaire.PegBoard.Shape;
 
 public class PegSolitaire {
 
@@ -27,6 +29,14 @@ public class PegSolitaire {
     public static ManualPlay manual;
     
     public static JCheckBox autoBox;
+    
+    public static MoveHistory history = new MoveHistory();
+    public static boolean[][] initialBoard;
+    public static ReplayController replayController;
+    
+    public static JCheckBox recordBox;
+
+
 
     public static void main(String[] args) {
     	
@@ -40,18 +50,55 @@ public class PegSolitaire {
         background = new ImageBackgroundPanel("background.png");
         background.setLayout(null);
         frame.setContentPane(background);
-
+        
         // Create initial board
         board = new PegBoard(boardSize);
         board.setOpaque(false);
-        board.setBounds(600, 200, 700, 700);
-        background.add(board);
+        // Set bounds BEFORE adding to background
+        board.setBounds(600-7, 300+5, 700, 700);
+        background.add(board);  // add AFTER bounds
+        PegSolitaire.initialBoard = board.copyState();
+        replayController = new ReplayController(board, history);
+        PegSolitaire.history.clear();
         manual = new ManualPlay(board);
         auto = new AutomaticPlay(board);
+        background.revalidate();
+        background.repaint();
 
         // Start in manual mode
         mode = manual;
         mode.activate();
+        
+        //Replay buttons
+        JButton playReplay = new JButton("Play");
+        playReplay.addActionListener(e -> {
+            PegSolitaire.enterReplayMode();
+            replayController.startReplay();
+        });
+        playReplay.setBounds(50, 500, 150, 40);
+        background.add(playReplay);
+
+        JButton pauseReplay = new JButton("Pause");
+        pauseReplay.addActionListener(e -> replayController.pauseReplay());
+        pauseReplay.setBounds(50, 550, 150, 40);
+        background.add(pauseReplay);
+
+        JButton restartReplay = new JButton("Restart");
+        restartReplay.addActionListener(e -> {
+            PegSolitaire.enterReplayMode();
+            replayController.startReplay();
+        });
+        restartReplay.setBounds(50, 600, 150, 40);
+        background.add(restartReplay);
+
+        JButton stepReplay = new JButton("Step");
+        stepReplay.addActionListener(e -> {
+            PegSolitaire.enterReplayMode();
+            replayController.stepForward();
+        });
+
+        stepReplay.setBounds(50, 650, 150, 40);
+        background.add(stepReplay);
 
         // Title label
         JLabel titleLabel = new JLabel("Arc Solitaire");
@@ -79,8 +126,12 @@ public class PegSolitaire {
         JButton reset = new JButton("Reset");
         reset.setBounds(40, 100, 120, 30);
         reset.setFocusable(false);
-        reset.addActionListener(e -> board.resetBoard());
-        background.add(reset);
+        reset.addActionListener(e -> {
+        	board.resetBoard();
+        	PegSolitaire.history.clear();
+        	PegSolitaire.initialBoard = board.copyState(); 
+        });
+        //x background.add(reset);
 
         // Options panel (board size + shapes)
         BoardOptionsPanel options = new BoardOptionsPanel();
@@ -88,7 +139,7 @@ public class PegSolitaire {
         background.add(options);
         
 	     // Auto-play checkbox
-        JCheckBox autoBox = new JCheckBox("Auto Play");
+        autoBox = new JCheckBox("Auto Play");
         autoBox.setBounds(60, 280, 150, 30);   // adjust position as needed
         autoBox.setOpaque(false);
         autoBox.setForeground(Color.WHITE);
@@ -113,28 +164,69 @@ public class PegSolitaire {
         JButton randomizeButton = new JButton("Randomize Board");
         randomizeButton.setBounds(60, 320, 150, 30);
         background.add(randomizeButton);
-
+        
         randomizeButton.addActionListener(e -> {
+            int originalCount = board.countPegs();
+            // Get all valid cells
+            List<Point> valid = board.getAllValidCells();
+            // Special case: 1 peg allowed to be isolated
+            if (originalCount == 1) {
+                Collections.shuffle(valid);
+                Point p = valid.get(0);
 
-            // Randomize pegs: 50% chance each cell
-            for (int r = 0; r < board.getBoardSize(); r++) {
-                for (int c = 0; c < board.getBoardSize(); c++) {
+                // Clear board
+                for (Point q : valid) board.setPeg(q.x, q.y, false);
 
-                    if (!board.isValidCell(r, c)) {
-                        board.setPeg(r, c, false);
-                        continue;
+                board.setPeg(p.x, p.y, true);
+                board.repaint();
+                PegSolitaire.restartMode();
+                PegSolitaire.history.add(new RandomizeRecord(board.copyState()));
+                return;
+            }
+            List<Point> selection = new ArrayList<>();
+            while (true) {
+                // Shuffle valid cells
+                Collections.shuffle(valid);
+
+                // Pick first N cells
+                selection.clear();
+                for (int i = 0; i < originalCount; i++) {
+                    selection.add(valid.get(i));
+                }
+
+                // Check adjacency rule
+                boolean ok = true;
+
+                for (Point p : selection) {
+                    boolean hasNeighbor = false;
+
+                    int[][] dirs = {{1,0},{-1,0},{0,1},{0,-1}};
+                    for (int[] d : dirs) {
+                        Point n = new Point(p.x + d[0], p.y + d[1]);
+                        if (selection.contains(n)) {
+                            hasNeighbor = true;
+                            break;
+                        }
                     }
 
-                    boolean peg = Math.random() < 0.5;
-                    board.setPeg(r, c, peg);
+                    if (!hasNeighbor) {
+                        ok = false;
+                        break;
+                    }
                 }
-            }
 
+                if (ok) break; // Valid selection found
+            }
+            // Clear board
+            for (Point q : valid) board.setPeg(q.x, q.y, false);
+            // Place pegs
+            for (Point p : selection) {
+                board.setPeg(p.x, p.y, true);
+            }
             board.clearSelection();
             board.repaint();
-
-            // If auto was running, keep it running
-            PegSolitaire.restartMode();
+            PegSolitaire.replayController.stopReplay();
+            PegSolitaire.history.add(new RandomizeRecord(board.copyState()));
         });
 
      // OK button logic
@@ -162,6 +254,8 @@ public class PegSolitaire {
                 int y = (background.getHeight() - grid) / 2;
                 board.setBounds(x, y, grid, grid);
 
+                history.clear();
+
                 background.revalidate();
                 background.repaint();
 
@@ -171,17 +265,17 @@ public class PegSolitaire {
             }
         });
 
+    // Record Checkbox
+    recordBox = new JCheckBox("Record");
+    recordBox.setFont(new Font("Verdana", Font.BOLD, 16));
+    recordBox.setBounds(40, 420, 200, 40);
+    recordBox.setOpaque(false);
+    //x background.add(recordBox);
 
-        // Record Checkbox
-        JCheckBox checkBox = new JCheckBox("Record");
-        checkBox.setFont(new Font("Verdana", Font.BOLD, 16));
-        checkBox.setBounds(40, 420, 200, 40);
-        checkBox.setOpaque(false);
-        background.add(checkBox);
-
-        frame.setVisible(true);
-    }
+    frame.setVisible(true);
     
+    } //End main
+
     public static void restartMode() {
         if (mode != null) {
             mode.deactivate();
@@ -195,7 +289,25 @@ public class PegSolitaire {
 
         mode.activate();
     }
+    
+    public static void disableAllModes() {
+        if (mode != null) mode.deactivate();
+    }
+    
+    public static void enterReplayMode() {
+        if (mode != null) mode.deactivate();
+        mode = null; // no active play mode during replay
+    }
 }
+
+
+
+
+
+
+
+
+
 
 class ImageBackgroundPanel extends JPanel {
 
@@ -213,3 +325,5 @@ class ImageBackgroundPanel extends JPanel {
         g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
     }
 }
+
+

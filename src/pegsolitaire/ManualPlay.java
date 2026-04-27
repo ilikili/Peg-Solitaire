@@ -32,11 +32,35 @@ public class ManualPlay extends Play {
 
                 // Attempt move
                 if (board.hasSelection() && !board.hasPeg(r, c)) {
-                    board.attemptMove(board.getSelectedRow(),
-                                      board.getSelectedCol(),
-                                      r, c);
+
+                    int fromR = board.getSelectedRow();
+                    int fromC = board.getSelectedCol();
+                    int toR   = r;
+                    int toC   = c;
+
+                    // Compute the jumped over peg before the move
+                    int overR = (fromR + toR) / 2;
+                    int overC = (fromC + toC) / 2;
+
+                    // Check if the move is legal
+                    boolean legal =
+                    	    board.isValidCell(overR, overC) &&
+                    	    board.hasPeg(fromR, fromC) &&
+                    	    board.hasPeg(overR, overC) &&
+                    	    !board.hasPeg(toR, toC);
+
+                    // Perform the move
+                    board.attemptMove(fromR, fromC, toR, toC);
+
+                    // Only record if it was a legal jump
+                    if (legal) {
+                        PegSolitaire.history.add(
+                            new MoveRecord(fromR, fromC, overR, overC, toR, toC, System.currentTimeMillis())
+                        );
+                    }
                     board.repaint();
                 }
+
             }
         };
 
